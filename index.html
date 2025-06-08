@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+  <div id="login-container">
+    <div id="login-card" class="card">
+      <h2>Admin Login</h2>
+      <form id="auth-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <div class="input-with-icon">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" placeholder="Enter your email" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-with-icon">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Enter your password" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+      </form>
+      <div id="auth-status-message" class="status-message"></div>
+    </div>
+  </div>
+
+  <div class="container" id="admin-panel" style="display: none;">
+    <header>
+      <div class="logo">
+        <i class="fas fa-car"></i>
+        <h1>Vehicle Admin Panel</h1>
+      </div>
+      <div class="user-info">
+        <span id="user-email"></span>
+        <button class="btn-reset" id="logout-btn" style="margin-left: 15px;">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-plus-circle"></i>
+          <h2>Add / Update Vehicle</h2>
+        </div>
+        
+        <form id="car-form">
+          <input type="hidden" id="car-id">
+          
+          <div class="form-group">
+            <label for="make-select">Vehicle Make</label>
+            <div class="input-with-icon">
+              <i class="fas fa-industry"></i>
+              <select id="make-select" required>
+                <option value="">Select Make</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="model-select">Vehicle Model</label>
+            <div class="input-with-icon">
+              <i class="fas fa-car-side"></i>
+              <select id="model-select" required disabled>
+                <option value="">Select Model</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="plate_number">License Plate</label>
+            <div class="input-with-icon">
+              <i class="fas fa-tag"></i>
+              <input type="text" id="plate_number" placeholder="Enter license plate number" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="year">Year</label>
+            <div class="input-with-icon">
+              <i class="fas fa-calendar-alt"></i>
+              <input type="number" id="year" placeholder="Enter manufacturing year" min="1900" max="2099" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="color">Color</label>
+            <div class="input-with-icon">
+              <i class="fas fa-palette"></i>
+              <input type="text" id="color" placeholder="Enter vehicle color" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="price">Price</label>
+            <div class="input-with-icon">
+              <i class="fas fa-dollar-sign"></i>
+              <input type="number" id="price" placeholder="Enter price" step="0.01" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="status">Status</label>
+            <div class="input-with-icon">
+              <i class="fas fa-info-circle"></i>
+              <input type="text" id="status" placeholder="Enter vehicle status" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="features">Features</label>
+            <div class="input-with-icon">
+              <i class="fas fa-star"></i>
+              <input type="text" id="features" placeholder="Enter vehicle features (comma-separated)" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="fuel">Fuel Level (%)</label>
+            <div class="input-with-icon">
+              <i class="fas fa-gas-pump"></i>
+              <input type="number" id="fuel" placeholder="Enter fuel level (0-100)" min="0" max="100" step="0.1" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="odometer_km">Odometer (KM)</label>
+            <div class="input-with-icon">
+              <i class="fas fa-road"></i>
+              <input type="number" id="odometer_km" placeholder="Enter total kilometers driven" min="0" step="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="pic_url">Picture URL</label>
+            <div class="input-with-icon">
+              <i class="fas fa-image"></i>
+              <input type="url" id="pic_url" placeholder="Enter vehicle picture URL">
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button type="submit" class="btn-submit">
+              <i class="fas fa-paper-plane"></i> Submit
+            </button>
+            <button type="reset" class="btn-reset" id="reset-btn">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+          </div>
+        </form>
+        
+        <div id="status-message" class="status-message"></div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-list"></i>
+          <h2>Vehicle Inventory</h2>
+        </div>
+        
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Make</th>
+                <th>Model</th>
+                <th>License Plate</th>
+                <th>Year</th>
+                <th>Color</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Features</th>
+                <th>Fuel Level</th>
+                <th>Odometer (KM)</th>
+                <th>Picture</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="cars-list">
+              </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
