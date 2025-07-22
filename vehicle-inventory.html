@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Inventory - Fox Car Rental Admin</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Custom scrollbar for the sidebar */
+        .sidebar-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #5AB9EA #F3F4F6;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: #F3F4F6;
+            border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background-color: #5AB9EA;
+            border-radius: 10px;
+            border: 2px solid #F3F4F6;
+        }
+
+        /* Custom styles for the background gradient */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #5680E9, #84CEEB, #5AB9EA, #C1C8E4, #8860D0);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Define custom colors from the image */
+        .bg-custom-blue-dark { background-color: #5680E9; }
+        .bg-custom-blue-light { background-color: #84CEEB; }
+        .bg-custom-cyan { background-color: #5AB9EA; }
+        .bg-custom-light-purple { background-color: #C1C8E4; }
+        .bg-custom-purple { background-color: #8860D0; }
+
+        .text-custom-blue-dark { color: #5680E9; }
+        .text-custom-blue-light { color: #84CEEB; }
+        .text-custom-cyan { color: #5AB9EA; }
+        .text-custom-light-purple { color: #C1C8E4; }
+        .text-custom-purple { color: #8860D0; }
+
+        .border-custom-blue-dark { border-color: #5680E9; }
+        .border-custom-blue-light { border-color: #84CEEB; }
+        .border-custom-cyan { border-color: #5AB9EA; }
+        .border-custom-light-purple { border-color: #C1C8E4; }
+        .border-custom-purple { border-color: #8860D0; }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row min-h-screen text-gray-800">
+
+    <!-- Sidebar for Desktop -->
+    <aside class="hidden lg:flex flex-col w-64 bg-white shadow-lg rounded-r-xl p-4 overflow-y-auto sidebar-scroll">
+        <div class="flex items-center justify-center p-4 mb-6">
+            <img src="https://placehold.co/40x40/5680E9/ffffff?text=F" alt="Fox Car Rental Logo" class="w-10 h-10 rounded-full mr-3">
+            <h1 class="text-xl font-bold text-gray-800">Fox Car Rental Admin</h1>
+        </div>
+        <nav class="flex-grow">
+            <ul>
+                <li class="mb-2">
+                    <a href="dashboard.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="mb-2">
+                    <a href="vehicle-inventory.html" class="flex items-center p-3 rounded-lg bg-custom-blue-light text-white shadow-md transition-all duration-200 hover:bg-custom-blue-dark">
+                        <i class="fas fa-car mr-3"></i>
+                        Vehicle Inventory
+                    </a>
+                </li>
+                <li class="mb-2">
+                    <a href="customer-list.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                        <i class="fas fa-users mr-3"></i>
+                        Customer List
+                    </a>
+                </li>
+                <li class="mb-2">
+                    <a href="rent-history.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                        <i class="fas fa-history mr-3"></i>
+                        Rent History
+                    </a>
+                </li>
+                <li class="mb-2">
+                    <a href="reports.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        Reports
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col p-4 sm:p-6 lg:p-8">
+        <!-- Top Nav for Mobile & Desktop -->
+        <header class="bg-white shadow-md rounded-xl p-4 mb-6 flex items-center justify-between lg:hidden">
+            <div class="flex items-center">
+                <img src="https://placehold.co/30x30/5680E9/ffffff?text=F" alt="Fox Car Rental Logo" class="w-8 h-8 rounded-full mr-2">
+                <h1 class="text-lg font-bold text-gray-800">Fox Car Rental Admin</h1>
+            </div>
+            <button id="mobile-menu-button" class="text-gray-600 focus:outline-none focus:text-gray-900">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+        <aside id="mobile-sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto sidebar-scroll">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <img src="https://placehold.co/40x40/5680E9/ffffff?text=F" alt="Fox Car Rental Logo" class="w-10 h-10 rounded-full mr-3">
+                    <h1 class="text-xl font-bold text-gray-800">Fox Car Rental Admin</h1>
+                </div>
+                <button id="close-mobile-menu-button" class="text-gray-600 focus:outline-none focus:text-gray-900">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul>
+                    <li class="mb-2">
+                        <a href="dashboard.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="vehicle-inventory.html" class="flex items-center p-3 rounded-lg bg-custom-blue-light text-white shadow-md transition-all duration-200 hover:bg-custom-blue-dark">
+                            <i class="fas fa-car mr-3"></i>
+                            Vehicle Inventory
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="customer-list.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                            <i class="fas fa-users mr-3"></i>
+                            Customer List
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="rent-history.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                            <i class="fas fa-history mr-3"></i>
+                            Rent History
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="reports.html" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            Reports
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Vehicle Inventory Header -->
+        <div class="bg-white shadow-md rounded-xl p-4 mb-6 flex items-center justify-between">
+            <h2 class="text-2xl font-semibold text-gray-800">Vehicle Inventory</h2>
+            <div class="flex items-center space-x-4">
+                <button id="add-vehicle-button" class="bg-custom-blue-dark text-white px-4 py-2 rounded-lg shadow-md hover:bg-custom-blue-light transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Add Vehicle
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white shadow-md rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+            <div class="relative w-full sm:w-1/2 lg:w-1/3">
+                <input type="text" id="search-input" placeholder="Search vehicles..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue-light">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <div class="relative w-full sm:w-1/2 lg:w-1/4">
+                <select id="status-filter" class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-custom-blue-light">
+                    <option value="All">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Rented">Rented</option>
+                    <option value="Maintenance">Maintenance</option>
+                </select>
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            </div>
+        </div>
+
+        <!-- Vehicle Cards Grid -->
+        <div id="vehicle-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Vehicle cards will be dynamically loaded here -->
+            <div id="loading-message" class="col-span-full text-center text-gray-600">
+                Loading vehicles...
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Vehicle Modal -->
+    <div id="vehicle-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-lg">
+            <h3 id="modal-title" class="text-2xl font-semibold text-gray-800 mb-4">Add New Vehicle</h3>
+            <form id="vehicle-form" class="space-y-4">
+                <div>
+                    <label for="plate_number" class="block text-sm font-medium text-gray-700">Plate Number</label>
+                    <input type="text" id="plate_number" name="plate_number" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light" required>
+                </div>
+                <div>
+                    <label for="make_id" class="block text-sm font-medium text-gray-700">Make</label>
+                    <select id="make_id" name="make_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light" required>
+                        <option value="">Select Make</option>
+                        <!-- Options will be loaded dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label for="model_id" class="block text-sm font-medium text-gray-700">Model</label>
+                    <select id="model_id" name="model_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light" required>
+                        <option value="">Select Model</option>
+                        <!-- Options will be loaded dynamically based on make selection -->
+                    </select>
+                </div>
+                <div>
+                    <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                    <input type="number" id="year" name="year" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div>
+                    <label for="color" class="block text-sm font-medium text-gray-700">Color</label>
+                    <input type="text" id="color" name="color" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700">Price (AED)</label>
+                    <input type="number" id="price" name="price" step="0.01" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="status" name="status" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                        <option value="Available">Available</option>
+                        <option value="Rented">Rented</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="fuel" class="block text-sm font-medium text-gray-700">Fuel (%)</label>
+                    <input type="number" id="fuel" name="fuel" min="0" max="100" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div>
+                    <label for="odometer_km" class="block text-sm font-medium text-gray-700">Odometer (KM)</label>
+                    <input type="number" id="odometer_km" name="odometer_km" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div>
+                    <label for="features" class="block text-sm font-medium text-gray-700">Features</label>
+                    <textarea id="features" name="features" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light"></textarea>
+                </div>
+                <div>
+                    <label for="pic_url" class="block text-sm font-medium text-gray-700">Picture URL (Optional)</label>
+                    <input type="text" id="pic_url" name="pic_url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-custom-blue-light focus:border-custom-blue-light">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-vehicle-button" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors duration-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-custom-blue-dark text-white hover:bg-custom-blue-light transition-colors duration-200">Save Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://yzwfldypkwqndxjchgit.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6d2ZsZHlwa3dxbmR4amNoZ2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMjA0OTUsImV4cCI6MjA2NDg5NjQ5NX0.i3HOii7L9mJ-cBZ2us3TRmS0-GI9bylHuLe9INAu4zY';
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // DOM Elements
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+        const vehicleCardsGrid = document.getElementById('vehicle-cards-grid');
+        const loadingMessage = document.getElementById('loading-message');
+        const addVehicleButton = document.getElementById('add-vehicle-button');
+        const vehicleModal = document.getElementById('vehicle-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const vehicleForm = document.getElementById('vehicle-form');
+        const cancelVehicleButton = document.getElementById('cancel-vehicle-button');
+        const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
+        const makeSelect = document.getElementById('make_id');
+        const modelSelect = document.getElementById('model_id');
+
+
+        let currentEditDocId = null; // To store the ID of the document being edited
+        let allCarsData = []; // Store all fetched cars for filtering/searching
+        let makesData = []; // Store fetched makes
+        let modelsData = []; // Store fetched models
+
+        // --- Mobile Sidebar Logic ---
+        mobileMenuButton.addEventListener('click', () => {
+            mobileSidebar.classList.remove('-translate-x-full');
+            mobileSidebarOverlay.classList.remove('hidden');
+        });
+
+        closeMobileMenuButton.addEventListener('click', () => {
+            mobileSidebar.classList.add('-translate-x-full');
+            mobileSidebarOverlay.classList.add('hidden');
+        });
+
+        mobileSidebarOverlay.addEventListener('click', () => {
+            mobileSidebar.classList.add('-translate-x-full');
+            mobileSidebarOverlay.classList.add('hidden');
+        });
+
+        // --- Helper Functions ---
+
+        // Function to render vehicle cards
+        function renderVehicles(vehicles) {
+            vehicleCardsGrid.innerHTML = ''; // Clear existing cards
+            if (vehicles.length === 0) {
+                vehicleCardsGrid.innerHTML = '<p class="col-span-full text-center text-gray-600">No vehicles found.</p>';
+                return;
+            }
+
+            vehicles.forEach(car => {
+                // Access make and model names from the joined data
+                const makeName = car.veh_make ? car.veh_make.make : 'N/A';
+                const modelName = car.veh_model ? car.veh_model.model : 'N/A';
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-xl shadow-md overflow-hidden border-t-4 ${getBorderColor(car.status)}`;
+                card.innerHTML = `
+                    <div class="relative h-48 bg-gray-100 flex items-center justify-center">
+                        <img src="${car.pic_url || `https://placehold.co/300x200/${getPlaceholderColor(car.status)}/ffffff?text=${makeName}+${modelName}`}" alt="${makeName} ${modelName}" class="max-h-full max-w-full object-contain">
+                        <span class="absolute top-2 right-2 ${getStatusBgColor(car.status)} text-white text-xs font-semibold px-2 py-1 rounded-full">${car.status}</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-1">${makeName} ${modelName}</h3>
+                        <p class="text-lg font-bold text-custom-blue-dark mb-3">AED ${car.price ? parseFloat(car.price).toFixed(2) : 'N/A'}</p>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <p><strong>Plate:</strong> ${car.plate_number || 'N/A'}</p>
+                            <p><strong>Year:</strong> ${car.year || 'N/A'}</p>
+                            <p><strong>Color:</strong> ${car.color || 'N/A'}</p>
+                            <p><strong>Fuel:</strong> ${car.fuel ? car.fuel + '%' : 'N/A'}</p>
+                            <p><strong>Odometer:</strong> ${car.odometer_km ? car.odometer_km + ' KM' : 'N/A'}</p>
+                            <p><strong>Features:</strong> ${car.features || 'N/A'}</p>
+                        </div>
+                        <div class="mt-4 flex justify-end space-x-2">
+                            <button data-id="${car.id}" class="edit-btn text-custom-blue-dark hover:text-custom-blue-dark/80 transition-colors duration-200 p-2 rounded-full">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button data-id="${car.id}" class="delete-btn text-red-500 hover:text-red-600 transition-colors duration-200 p-2 rounded-full">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                vehicleCardsGrid.appendChild(card);
+            });
+
+            // Add event listeners for edit and delete buttons after rendering
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => openEditModal(e.currentTarget.dataset.id));
+            });
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => deleteVehicle(e.currentTarget.dataset.id));
+            });
+        }
+
+        // Helper functions for dynamic styling based on status
+        function getBorderColor(status) {
+            switch (status) {
+                case 'Available': return 'border-custom-cyan';
+                case 'Rented': return 'border-custom-blue-dark';
+                case 'Maintenance': return 'border-red-500';
+                default: return 'border-gray-400';
+            }
+        }
+
+        function getStatusBgColor(status) {
+            switch (status) {
+                case 'Available': return 'bg-custom-cyan';
+                case 'Rented': return 'bg-custom-blue-light';
+                case 'Maintenance': return 'bg-red-500';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        function getPlaceholderColor(status) {
+            switch (status) {
+                case 'Available': return '5AB9EA';
+                case 'Rented': return '5680E9';
+                case 'Maintenance': return 'DC2626'; /* red-600 */
+                default: return '9CA3AF'; /* gray-400 */
+            }
+        }
+
+        // Fetch cars from Supabase with joins to get make and model names
+        async function fetchCars() {
+            loadingMessage.classList.remove('hidden');
+            vehicleCardsGrid.innerHTML = ''; // Clear existing cards
+            const { data, error } = await supabaseClient
+                .from('cars')
+                .select(`
+                    *,
+                    veh_make (make),
+                    veh_model (model)
+                `);
+
+            if (error) {
+                console.error("Error fetching cars:", error);
+                loadingMessage.textContent = 'Error loading vehicles.';
+                return;
+            }
+
+            allCarsData = data; // Update the master list
+            applyFiltersAndSearch(allCarsData); // Apply filters and search after fetching
+            loadingMessage.classList.add('hidden'); // Hide loading message
+        }
+
+        // Function to fetch makes for the dropdown
+        async function fetchMakes() {
+            const { data, error } = await supabaseClient
+                .from('veh_make')
+                .select('id, make');
+            if (error) {
+                console.error("Error fetching makes:", error);
+                return;
+            }
+            makesData = data;
+            populateSelect(makeSelect, makesData, 'make', 'id');
+        }
+
+        // Function to fetch models for the dropdown based on selected make
+        async function fetchModels(makeId) {
+            modelSelect.innerHTML = '<option value="">Select Model</option>'; // Clear models
+            if (!makeId) return;
+
+            const { data, error } = await supabaseClient
+                .from('veh_model')
+                .select('id, model')
+                .eq('make_id', makeId);
+            if (error) {
+                console.error("Error fetching models:", error);
+                return;
+            }
+            modelsData = data;
+            populateSelect(modelSelect, modelsData, 'model', 'id');
+        }
+
+        // Helper to populate select dropdowns
+        function populateSelect(selectElement, data, textKey, valueKey) {
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item[valueKey];
+                option.textContent = item[textKey];
+                selectElement.appendChild(option);
+            });
+        }
+
+        // Event listener for make selection change
+        makeSelect.addEventListener('change', (e) => {
+            fetchModels(e.target.value);
+        });
+
+
+        // Function to apply search and filter
+        function applyFiltersAndSearch(carsData) {
+            let filteredCars = [...carsData]; // Create a mutable copy
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedStatus = statusFilter.value;
+
+            if (searchTerm) {
+                filteredCars = filteredCars.filter(car =>
+                    (car.plate_number && car.plate_number.toLowerCase().includes(searchTerm)) ||
+                    (car.color && car.color.toLowerCase().includes(searchTerm)) ||
+                    (car.features && car.features.toLowerCase().includes(searchTerm)) ||
+                    (car.veh_make && car.veh_make.make.toLowerCase().includes(searchTerm)) || // Search by make name
+                    (car.veh_model && car.veh_model.model.toLowerCase().includes(searchTerm)) // Search by model name
+                );
+            }
+
+            if (selectedStatus !== 'All') {
+                filteredCars = filteredCars.filter(car => car.status === selectedStatus);
+            }
+
+            renderVehicles(filteredCars);
+        }
+
+        // Event listeners for search and filter
+        searchInput.addEventListener('input', () => applyFiltersAndSearch(allCarsData));
+        statusFilter.addEventListener('change', () => applyFiltersAndSearch(allCarsData));
+
+        // Initial fetch when the page loads
+        fetchCars();
+        fetchMakes(); // Fetch makes when the page loads for the modal dropdown
+
+        // --- Modal Logic for Add/Edit Vehicle ---
+
+        addVehicleButton.addEventListener('click', () => {
+            modalTitle.textContent = 'Add New Vehicle';
+            vehicleForm.reset(); // Clear form
+            currentEditDocId = null; // Reset edit ID
+            makeSelect.value = ""; // Reset make dropdown
+            modelSelect.innerHTML = '<option value="">Select Model</option>'; // Clear models
+            vehicleModal.classList.remove('hidden');
+        });
+
+        cancelVehicleButton.addEventListener('click', () => {
+            vehicleModal.classList.add('hidden');
+        });
+
+        vehicleModal.addEventListener('click', (e) => {
+            if (e.target === vehicleModal) { // Close when clicking outside the modal content
+                vehicleModal.classList.add('hidden');
+            }
+        });
+
+        // Open modal for editing
+        async function openEditModal(id) {
+            const { data, error } = await supabaseClient
+                .from('cars')
+                .select(`
+                    *,
+                    veh_make (make),
+                    veh_model (model)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                console.error("Error fetching car for edit:", error);
+                return;
+            }
+
+            if (data) {
+                modalTitle.textContent = 'Edit Vehicle';
+                // Populate form fields
+                document.getElementById('plate_number').value = data.plate_number || '';
+                document.getElementById('year').value = data.year || '';
+                document.getElementById('color').value = data.color || '';
+                document.getElementById('price').value = data.price || '';
+                document.getElementById('status').value = data.status || 'Available';
+                document.getElementById('fuel').value = data.fuel || '';
+                document.getElementById('odometer_km').value = data.odometer_km || '';
+                document.getElementById('features').value = data.features || '';
+                document.getElementById('pic_url').value = data.pic_url || '';
+
+                // Set make and model dropdowns
+                makeSelect.value = data.make_id || '';
+                if (data.make_id) {
+                    await fetchModels(data.make_id); // Fetch models for the selected make
+                    modelSelect.value = data.model_id || '';
+                } else {
+                    modelSelect.innerHTML = '<option value="">Select Model</option>';
+                }
+
+                currentEditDocId = id;
+                vehicleModal.classList.remove('hidden');
+            } else {
+                console.error("No car found with ID:", id);
+            }
+        }
+
+        // Handle form submission (Add or Update)
+        vehicleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(vehicleForm);
+            const carData = {
+                plate_number: formData.get('plate_number'),
+                year: parseInt(formData.get('year')) || null,
+                color: formData.get('color'),
+                price: parseFloat(formData.get('price')) || null,
+                status: formData.get('status'),
+                features: formData.get('features'),
+                fuel: parseInt(formData.get('fuel')) || null,
+                odometer_km: parseFloat(formData.get('odometer_km')) || null,
+                make_id: parseInt(formData.get('make_id')) || null,
+                model_id: parseInt(formData.get('model_id')) || null,
+                pic_url: formData.get('pic_url') || null,
+                from_date: null, // Not in form, default to null
+                end_date: null   // Not in form, default to null
+            };
+
+            try {
+                if (currentEditDocId) {
+                    // Update existing record
+                    const { data, error } = await supabaseClient
+                        .from('cars')
+                        .update(carData)
+                        .eq('id', currentEditDocId);
+
+                    if (error) throw error;
+                    console.log("Record updated:", data);
+                } else {
+                    // Add new record
+                    const { data, error } = await supabaseClient
+                        .from('cars')
+                        .insert([carData]);
+
+                    if (error) throw error;
+                    console.log("Record inserted:", data);
+                }
+                vehicleModal.classList.add('hidden'); // Close modal
+                vehicleForm.reset(); // Clear form
+                fetchCars(); // Re-fetch cars to update the list
+            } catch (error) {
+                console.error("Error saving vehicle:", error.message);
+                // In a real app, you'd show an error message to the user
+            }
+        });
+
+        // Delete vehicle
+        async function deleteVehicle(id) {
+            if (!confirm("Are you sure you want to delete this vehicle?")) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('cars')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                console.log("Record successfully deleted!");
+                fetchCars(); // Re-fetch cars to update the list
+            } catch (error) {
+                console.error("Error removing record: ", error.message);
+                // In a real app, you'd show an error message to the user
+            }
+        }
+    </script>
+</body>
+</html>
