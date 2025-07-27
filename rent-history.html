@@ -130,9 +130,38 @@
             width: 2rem; /* Ensure icons align */
             text-align: center;
         }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            #desktop-sidebar {
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease-in-out;
+                z-index: 100;
+            }
+            #desktop-sidebar.mobile-visible {
+                left: 0;
+            }
+            #main-content {
+                margin-left: 0 !important;
+            }
+            #main-header {
+                left: 0 !important;
+            }
+            #hamburger-menu {
+                display: block;
+            }
+        }
     </style>
 </head>
-<body class="flex flex-row min-h-screen text-gray-800">
+<body class="bg-gray-100">
+
+    <!-- Hamburger Menu for Mobile -->
+    <button id="hamburger-menu" class="fixed top-4 left-4 z-50 bg-white p-2 rounded-md shadow-md md:hidden">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-90 md:hidden hidden"></div>
 
     <!-- Sidebar for Desktop -->
     <aside id="desktop-sidebar" class="flex flex-col w-64 bg-white shadow-lg p-4 sidebar-scroll">
@@ -1955,6 +1984,23 @@
         window.addEventListener('DOMContentLoaded', () => {
             setupDesktopSidebar();
             fetchRentHistory(); // Fetch data on initial load
+        });
+
+        // Mobile sidebar toggle
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+        const desktopSidebar = document.getElementById('desktop-sidebar');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+
+        hamburgerMenu.addEventListener('click', () => {
+            desktopSidebar.classList.toggle('mobile-visible');
+            mobileOverlay.classList.toggle('hidden');
+            document.body.classList.toggle('overflow-hidden');
+        });
+
+        mobileOverlay.addEventListener('click', () => {
+            desktopSidebar.classList.remove('mobile-visible');
+            mobileOverlay.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
         });
     </script>
 </body>
