@@ -130,38 +130,9 @@
             width: 2rem; /* Ensure icons align */
             text-align: center;
         }
-
-        /* Mobile-specific styles */
-        @media (max-width: 768px) {
-            #desktop-sidebar {
-                position: fixed;
-                left: -100%;
-                transition: left 0.3s ease-in-out;
-                z-index: 100;
-            }
-            #desktop-sidebar.mobile-visible {
-                left: 0;
-            }
-            #main-content {
-                margin-left: 0 !important;
-            }
-            #main-header {
-                left: 0 !important;
-            }
-            #hamburger-menu {
-                display: block;
-            }
-        }
     </style>
 </head>
-<body class="bg-gray-100">
-
-    <!-- Hamburger Menu for Mobile -->
-    <button id="hamburger-menu" class="fixed top-4 left-4 z-50 bg-white p-2 rounded-md shadow-md md:hidden">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-90 md:hidden hidden"></div>
+<body class="flex flex-row min-h-screen text-gray-800">
 
     <!-- Sidebar for Desktop -->
     <aside id="desktop-sidebar" class="flex flex-col w-64 bg-white shadow-lg p-4 sidebar-scroll">
@@ -765,7 +736,8 @@
                     model: car.veh_model?.model
                 }));
                 populateSelect(ui.carIdSelect, allCarsData, 'text', 'id');
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("Error fetching cars for dropdown:", error.message);
                 ui.carSelectError.textContent = `Error loading vehicles: ${error.message}`;
                 ui.carSelectError.classList.remove('hidden');
@@ -787,7 +759,8 @@
                     phone_number: customer.phone_number
                 }));
                 populateSelect(ui.customerIdSelect, allCustomersData, 'text', 'id');
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("Error fetching customers for dropdown:", error.message);
                 ui.customerSelectError.textContent = `Error loading customers: ${error.message}`;
                 ui.customerSelectError.classList.remove('hidden');
@@ -1060,7 +1033,7 @@
                             veh_make (make),
                             veh_model (model)
                         ),
-                        customers (id, first_name, last_name, email, phone_number, address, city, driver_license_number, driver_license_expiry_date, date_of_birth, id_number, nationality, license_issued_by)
+                        customers (id, first_name, last_name, email, phone_number, address, city, driver_license_number, driver_license_expiry_date, date_of_birth, id_number, nationality, license_issued_by, signature)
                     `);
 
                 if (rentHistoryError) throw rentHistoryError;
@@ -1085,7 +1058,8 @@
                 console.log("Active rent history view fetched:", activeRentHistoryViewData);
 
                 applyFilters(allRentHistoryData); // Apply filters after fetching
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("An unexpected error occurred during fetchRentHistory:", error);
                 ui.loadingMessage.classList.add('hidden');
                 ui.errorText.textContent = `An unexpected error occurred: ${error.message}`;
@@ -1329,7 +1303,8 @@
 
                 ui.rentModal.classList.add('hidden');
                 fetchRentHistory(); // Re-fetch all records to update the list
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("Error saving rent record:", error.message);
                 showCustomMessageBox("Error", "Error saving rent record: " + error.message);
             }
@@ -1357,7 +1332,7 @@
                         veh_make (make),
                         veh_model (model)
                     ),
-                    customers (first_name, last_name, email, phone_number, address, city, driver_license_number, driver_license_expiry_date, date_of_birth, id_number, nationality, license_issued_by)
+                    customers (first_name, last_name, email, phone_number, address, city, driver_license_number, driver_license_expiry_date, date_of_birth, id_number, nationality, license_issued_by, signature)
                 `)
                 .eq('id', rentalId)
                 .single();
@@ -1613,17 +1588,31 @@
                         .signature-block {
                             flex: 1;
                             padding: 0 10px;
+                            position: relative; /* Added for positioning the image */
                         }
                         .signature-line {
                             border-bottom: 1px solid #000;
                             margin-top: 40px; /* Space for signature */
                             margin-bottom: 5px;
                         }
+                        .signature-block p { /* Added this rule to move the name down */
+                            margin-top: 10px; /* Adjust this value as needed */
+                        }
                         .logo-img {
                             max-width: 150px; /* Adjust as needed */
                             height: auto;
                             display: block;
                             margin: 0 auto 10px auto; /* Center the image */
+                        }
+                        .signature-image {
+                            max-width: 100%;
+                            height: 80px; /* Fixed height for signature image */
+                            object-fit: contain; /* Ensure the image fits within the bounds */
+                            position: absolute; /* Position absolutely within the block */
+                            bottom: 50px; /* Adjusted to move signature higher */
+                            left: 50%;
+                            transform: translateX(-50%); /* Center the image horizontally */
+                            display: block;
                         }
 
 
@@ -1913,8 +1902,9 @@
 
                         <div class="signature-section">
                             <div class="signature-block">
+                                ${customer.signature ? `<img src="${customer.signature}" alt="Hirer Signature" class="signature-image">` : ''}
                                 <div class="signature-line"></div>
-                                <p data-i18n-key="hirerSignature">${getTranslation('hirerSignature')}</p>
+                                <p data-i18n-key="hirerSignature">${customer.first_name || ''} ${customer.last_name || ''} (${getTranslation('hirerSignature')})</p>
                             </div>
                             <div class="signature-block">
                                 <div class="signature-line"></div>
@@ -1984,23 +1974,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             setupDesktopSidebar();
             fetchRentHistory(); // Fetch data on initial load
-        });
-
-        // Mobile sidebar toggle
-        const hamburgerMenu = document.getElementById('hamburger-menu');
-        const desktopSidebar = document.getElementById('desktop-sidebar');
-        const mobileOverlay = document.getElementById('mobile-overlay');
-
-        hamburgerMenu.addEventListener('click', () => {
-            desktopSidebar.classList.toggle('mobile-visible');
-            mobileOverlay.classList.toggle('hidden');
-            document.body.classList.toggle('overflow-hidden');
-        });
-
-        mobileOverlay.addEventListener('click', () => {
-            desktopSidebar.classList.remove('mobile-visible');
-            mobileOverlay.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
         });
     </script>
 </body>
