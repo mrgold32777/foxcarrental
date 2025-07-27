@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+]<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -418,7 +418,8 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6d2ZsZHlwa3dxbmR4amNoZ2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMjA0OTUsImV4cCI6MjA2NDg5NjQ5NX0.i3HOii7L9mJ-cBZ2us3TRmS0-GI9bylHuLe9INAu4zY';
 
         // Initialize Supabase client
-        const { createClient } = supabase;
+        // Corrected import path for Supabase ES module
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Redirect if not logged in
@@ -474,7 +475,7 @@
         // --- Modal Logic ---
         function showCustomMessageBox(title, message) {
             ui.notificationTitle.textContent = title;
-            ui.notificationMessage.textContent = message;
+            ui.notificationMessage.innerHTML = message; // Changed to innerHTML
             ui.notificationModal.classList.remove('hidden');
         }
 
@@ -536,7 +537,7 @@
             const { data, error } = await supabaseClient
                 .from('vehicle_maintenance')
                 .select(`
-                    *,
+                    veh_mai_id, maintenance_type, scheduled_date, completion_date, cost, status, notes, car_id,
                     cars (
                         plate_number,
                         veh_make (make),
@@ -587,10 +588,10 @@
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-700">${record.notes || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button data-id="${record.id}" class="edit-maintenance-btn text-custom-blue-dark hover:text-custom-blue-dark/80 transition-colors duration-200 p-2 rounded-full">
+                        <button data-id="${record.veh_mai_id}" class="edit-maintenance-btn text-custom-blue-dark hover:text-custom-blue-dark/80 transition-colors duration-200 p-2 rounded-full">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button data-id="${record.id}" class="delete-maintenance-btn text-red-500 hover:text-red-600 transition-colors duration-200 p-2 rounded-full">
+                        <button data-id="${record.veh_mai_id}" class="delete-maintenance-btn text-red-500 hover:text-red-600 transition-colors duration-200 p-2 rounded-full">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
@@ -700,11 +701,11 @@
         });
 
         // Open modal for editing maintenance record
-        async function openEditMaintenanceModal(id) {
+        async function openEditMaintenanceModal(veh_mai_id) { // Changed parameter name to match schema
             const { data, error } = await supabaseClient
                 .from('vehicle_maintenance')
                 .select('*')
-                .eq('id', id)
+                .eq('veh_mai_id', veh_mai_id) // Changed 'id' to 'veh_mai_id'
                 .single();
 
             if (error) {
@@ -726,10 +727,10 @@
                 await fetchAllVehicles(); // Ensure all vehicles are fetched
                 filterAndPopulateVehicles('', data.car_id); // Populate and pre-select vehicle dropdown
 
-                currentEditMaintenanceId = id;
+                currentEditMaintenanceId = veh_mai_id; // Store veh_mai_id
                 ui.maintenanceModal.classList.remove('hidden');
             } else {
-                console.error("No maintenance record found with ID:", id);
+                console.error("No maintenance record found with ID:", veh_mai_id);
                 showCustomMessageBox("Error", "No maintenance record found with the provided ID.");
             }
         }
@@ -757,7 +758,7 @@
                     const { data, error } = await supabaseClient
                         .from('vehicle_maintenance')
                         .update(maintenanceData)
-                        .eq('id', currentEditMaintenanceId);
+                        .eq('veh_mai_id', currentEditMaintenanceId); // Changed 'id' to 'veh_mai_id'
 
                     if (error) throw error;
                     console.log("Maintenance record updated:", data);
@@ -811,7 +812,7 @@
         });
 
         // Delete maintenance record
-        async function deleteMaintenanceRecord(id) {
+        async function deleteMaintenanceRecord(veh_mai_id) { // Changed parameter name to match schema
             showCustomMessageBox("Confirm Deletion", "Are you sure you want to delete this maintenance record? <br><br> <button id='confirm-delete-btn' class='bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 mr-2'>Yes, Delete</button><button id='cancel-delete-btn' class='bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300'>Cancel</button>");
 
             document.getElementById('confirm-delete-btn').onclick = async () => {
@@ -820,7 +821,7 @@
                     const { data, error } = await supabaseClient
                         .from('vehicle_maintenance')
                         .delete()
-                        .eq('id', id)
+                        .eq('veh_mai_id', veh_mai_id) // Changed 'id' to 'veh_mai_id'
                         .select('car_id'); // Select car_id to potentially revert car status
 
                     if (error) throw error;
@@ -833,7 +834,7 @@
                         // Check if there are any other active 'Under Maintenance' records for this car
                         const { data: activeMaintenance, error: activeMaintenanceError } = await supabaseClient
                             .from('vehicle_maintenance')
-                            .select('id')
+                            .select('veh_mai_id') // Select veh_mai_id
                             .eq('car_id', deletedCarId)
                             .in('status', ['In Progress', 'Scheduled', 'Under Maintenance']); // Check all statuses that might imply the car is not available
 

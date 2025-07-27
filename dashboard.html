@@ -12,6 +12,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -138,6 +140,58 @@
         #desktop-sidebar .nav-item i {
             width: 2rem; /* Ensure icons align */
             text-align: center;
+        }
+
+        /* Styles for the new dashboard sections */
+        .chart-placeholder {
+            height: 250px; /* Fixed height for the chart area */
+            background-color: #f8faff; /* Light background for chart area */
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .activity-icon {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            margin-top: 0.3rem; /* Align with text baseline */
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.blue { background-color: #5680E9; }
+        .activity-icon.orange { background-color: #FFBF00; } /* A shade of orange for maintenance */
+        .activity-icon.purple { background-color: #8860D0; }
+        .activity-icon.green { background-color: #10B981; } /* Example for a return */
+
+        .activity-details {
+            flex-grow: 1;
+        }
+
+        .activity-details p {
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .activity-details .main-text {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .activity-details .sub-text {
+            font-size: 0.85rem;
+            color: #718096;
         }
     </style>
 </head>
@@ -305,6 +359,17 @@
             </div>
         </div>
 
+        <!-- New sections: Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+            <!-- Recent Activity Card -->
+            <div class="kpi-card">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
+                <ul id="recent-activity-list">
+                    <!-- Recent activity items will be dynamically loaded here -->
+                </ul>
+            </div>
+        </div>
+
         <!-- Quick Actions Section -->
         <div>
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h3>
@@ -355,8 +420,6 @@
             rentedVehicles: document.getElementById('rented-vehicles'),
             maintenanceVehicles: document.getElementById('maintenance-vehicles'),
             totalCustomers: document.getElementById('total-customers'),
-            // Removed: activeRentals: document.getElementById('active-rentals'),
-            // Removed: monthlyRevenue: document.getElementById('monthly-revenue'),
             pendingPayments: document.getElementById('pending-payments'),
             lastUpdated: document.getElementById('last-updated'),
             refreshButton: document.getElementById('refresh-data'),
@@ -371,7 +434,8 @@
             notificationMessage: document.getElementById('notification-message'),
             notificationCloseButton: document.getElementById('notification-close-button'),
             userEmail: document.getElementById('user-email'),
-            userIdDisplay: document.getElementById('user-id-display')
+            userIdDisplay: document.getElementById('user-id-display'),
+            recentActivityList: document.getElementById('recent-activity-list') // Added for recent activity
         };
 
         // --- Sidebar State ---
@@ -395,13 +459,29 @@
 
         ui.notificationCloseButton.addEventListener('click', hideMessage);
 
+        // Helper function to format time difference
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutes ago";
+            return Math.floor(seconds) + " seconds ago";
+        }
+
         // --- Data Fetching and Real-time Listeners (Supabase) ---
         async function fetchDashboardData() {
             try {
                 // Fetch Cars data
                 const { data: cars, error: carsError } = await supabaseClient
                     .from('cars')
-                    .select('*');
+                    .select('id, status, make_id, model_id'); // Select only necessary fields
 
                 if (carsError) throw carsError;
 
@@ -418,47 +498,92 @@
                 // Fetch Customers data
                 const { data: customers, error: customersError } = await supabaseClient
                     .from('customers')
-                    .select('*');
+                    .select('id, first_name, last_name'); // Select only necessary fields
 
                 if (customersError) throw customersError;
                 ui.totalCustomers.textContent = customers.length;
 
-                // Removed: Fetch Active Rent History data for count
-                // Removed: const { count: activeRentalsCount, error: activeRentalsError } = await supabaseClient
-                // Removed:    .from('active_rent_history_view')
-                // Removed:    .select('*', { count: 'exact' });
+                // Fetch Vehicle Makes and Models for display
+                const { data: vehMakes, error: makesError } = await supabaseClient
+                    .from('veh_make')
+                    .select('id, make');
+                if (makesError) throw makesError;
+                const makeMap = new Map(vehMakes.map(make => [make.id, make.make]));
 
-                // Removed: if (activeRentalsError) throw activeRentalsError;
-                // Removed: ui.activeRentals.textContent = activeRentalsCount;
+                const { data: vehModels, error: modelsError } = await supabaseClient
+                    .from('veh_model')
+                    .select('id, model');
+                if (modelsError) throw modelsError;
+                const modelMap = new Map(vehModels.map(model => [model.id, model.model]));
 
+                // Create maps for quick lookup
+                const carMap = new Map(cars.map(car => [car.id, car]));
+                const customerMap = new Map(customers.map(customer => [customer.id, customer]));
 
-                // Fetch Rent History data for revenue and pending payments
+                // Fetch Rent History data for revenue and pending payments and recent activity
                 const { data: rentHistory, error: rentHistoryError } = await supabaseClient
                     .from('rent_history')
                     .select('*');
 
                 if (rentHistoryError) throw rentHistoryError;
 
-                // Removed: let monthlyRevenue = 0;
                 let pendingPayments = 0;
-
-                // Removed: const today = new Date();
-                // Removed: const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                // Removed: const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+                let recentActivities = [];
 
                 rentHistory.forEach(rental => {
-                    // Removed: Monthly Revenue
-                    // Removed: const createdAt = new Date(rental.created_at); // Assuming created_at is a valid date string
-                    // Removed: if (createdAt >= startOfMonth && createdAt <= endOfMonth) {
-                    // Removed:    monthlyRevenue += (rental.paid_amount || 0);
-                    // Removed: }
-
-                    // Pending Payments
                     pendingPayments += (rental.balance || 0);
+
+                    const car = carMap.get(rental.car_id);
+                    const customer = customerMap.get(rental.customer_id);
+                    const carName = car ? `${makeMap.get(car.make_id) || 'Unknown Make'} ${modelMap.get(car.model_id) || 'Unknown Model'}` : 'Unknown Car';
+                    const customerName = customer ? `${customer.first_name} ${customer.last_name}` : 'Unknown Customer';
+
+                    // Activity for rental start
+                    recentActivities.push({
+                        type: 'rented',
+                        description: `${carName} rented by ${customerName}`,
+                        timestamp: rental.from_date,
+                        iconClass: 'blue'
+                    });
+
+                    // Activity for actual return (if available)
+                    if (rental.actual_return_date) {
+                        recentActivities.push({
+                            type: 'returned',
+                            description: `${carName} returned by ${customerName}`,
+                            timestamp: rental.actual_return_date,
+                            iconClass: 'green'
+                        });
+                    }
                 });
 
-                // Removed: ui.monthlyRevenue.textContent = `AED ${monthlyRevenue.toFixed(2)}`;
                 ui.pendingPayments.textContent = `AED ${pendingPayments.toFixed(2)}`;
+
+                // Fetch Vehicle Maintenance data for recent activity
+                const { data: maintenanceHistory, error: maintenanceError } = await supabaseClient
+                    .from('vehicle_maintenance')
+                    .select('*');
+
+                if (maintenanceError) throw maintenanceError;
+
+                maintenanceHistory.forEach(maintenance => {
+                    const car = carMap.get(maintenance.car_id);
+                    const carName = car ? `${makeMap.get(car.make_id) || 'Unknown Make'} ${modelMap.get(car.model_id) || 'Unknown Model'}` : 'Unknown Car';
+
+                    // Activity for maintenance
+                    recentActivities.push({
+                        type: 'maintenance',
+                        description: `${carName} sent for maintenance`,
+                        timestamp: maintenance.created_at, // Using created_at or scheduled_date
+                        iconClass: 'purple'
+                    });
+                });
+
+                // Sort activities by timestamp in descending order
+                recentActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Render recent activities
+                renderRecentActivity(recentActivities.slice(0, 5)); // Display top 5 recent activities
                 
                 ui.lastUpdated.textContent = new Date().toLocaleTimeString();
 
@@ -466,6 +591,28 @@
                 console.error("Error fetching dashboard data:", error);
                 showMessage(`Error fetching dashboard data: ${error.message}`, "Data Error");
             }
+        }
+
+        // Function to render recent activity items
+        function renderRecentActivity(activities) {
+            ui.recentActivityList.innerHTML = ''; // Clear existing list
+            if (activities.length === 0) {
+                ui.recentActivityList.innerHTML = '<li class="text-gray-500">No recent activity to display.</li>';
+                return;
+            }
+
+            activities.forEach(activity => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('activity-item');
+                listItem.innerHTML = `
+                    <div class="activity-icon ${activity.iconClass}"></div>
+                    <div class="activity-details">
+                        <p class="main-text">${activity.description}</p>
+                        <p class="sub-text">${timeAgo(activity.timestamp)}</p>
+                    </div>
+                `;
+                ui.recentActivityList.appendChild(listItem);
+            });
         }
 
         // --- Desktop Sidebar Logic ---
@@ -526,18 +673,29 @@
             ui.rentedVehicles.textContent = '0';
             ui.maintenanceVehicles.textContent = '0';
             ui.totalCustomers.textContent = '0';
-            // Removed: ui.activeRentals.textContent = '0';
-            // Removed: ui.monthlyRevenue.textContent = 'AED 0.00';
             ui.pendingPayments.textContent = 'AED 0.00';
             ui.lastUpdated.textContent = '...';
             ui.userEmail.textContent = "admin@foxcarrental.com"; // Reset to default
             ui.userIdDisplay.classList.add('hidden'); // Hide user ID
+            ui.recentActivityList.innerHTML = ''; // Clear recent activity
         });
         
         // --- Initial Load ---
         window.addEventListener('DOMContentLoaded', () => {
-            setupDesktopSidebar();
-            fetchDashboardData(); // Fetch data on initial load
+            setupDesktopSidebar(); // Always set up desktop sidebar as mobile view is removed
+            // Redirect if not logged in
+            supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                if (!session) {
+                    window.location.href = 'login.html'; // Redirect to login page
+                } else {
+                    // If session exists, fetch and render dashboard data
+                    fetchDashboardData();
+                }
+            }).catch(error => {
+                console.error("Error checking session:", error);
+                // Even if session fails, try to load data, but log the error
+                fetchDashboardData();
+            });
         });
     </script>
 </body>

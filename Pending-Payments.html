@@ -572,7 +572,13 @@
 
         // --- Initial Load ---
         window.addEventListener('DOMContentLoaded', () => {
-            setupDesktopSidebar();
+            setupDesktopSidebar(); // Always set up desktop sidebar as mobile view is removed
+            // Redirect if not logged in
+            supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                if (!session) {
+                    window.location.href = 'login.html'; // Redirect to login page
+                }
+            });
             fetchAndRenderRentalData();
         });
     </script>
